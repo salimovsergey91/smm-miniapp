@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SMM Mini Editor</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:12px; background:#fafafa; color:#222; }
+    #app { max-width:900px; margin:0 auto; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+    .toolbar > * { padding:8px 10px; border-radius:8px; border:1px solid #ddd; background:#fff; }
+    #canvas-wrap { border:1px solid #e3e3e3; background:#fff; display:flex; justify-content:center; align-items:center; }
+    canvas { touch-action: none; }
+    .panel { margin-bottom:10px; }
+    .small { font-size:13px; color:#666; }
+    @media (max-width:720px){
+      #app { padding:6px; }
+      #canvas { width:320px !important; height:320px !important; }
+    }
+  </style>
+  <!-- Fabric.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h2>SMM Mini Editor — MVP</h2>
+    <div class="toolbar panel">
+      <input id="formatSelect" title="Формат" type="text" value="600x600" style="width:110px" />
+      <input id="fileInput" type="file" accept="image/*" />
+      <input id="logoInput" type="file" accept="image/*" />
+      <button id="addTextBtn">Добавить текст</button>
+      <select id="fontSelect">
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Tahoma">Tahoma</option>
+      </select>
+      <select id="bgPreset">
+        <option value="none">Фон: белый</option>
+        <option value="grad1">Градиент 1</option>
+        <option value="grad2">Градиент 2</option>
+        <option value="pattern1">Шаблон 1</option>
+      </select>
+      <button id="bringForward">Вперед</button>
+      <button id="sendBack">Назад</button>
+      <button id="deleteBtn">Удалить</button>
+      <button id="downloadBtn">Скачать PNG</button>
+    </div>
+
+    <div id="canvas-wrap" style="width:100%; display:flex; justify-content:center;">
+      <canvas id="c" width="600" height="600"></canvas>
+    </div>
+
+    <div class="small">Подсказка: перетаскивай элементы пальцем/мышью. Для мобильных — используй вертикальную ориентацию.</div>
+  </div>
+
+  <script>
+    // ---------- Инициализация ----------
+    const DEFAULT_WIDTH = 600;
+    const DEFAULT_HEIGHT = 600;
+    const canvas = new fabric.Canvas('c', { preserveObjectStacking: true, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, backgroundColor: '#ffffff' });
+
+    // Утилиты
+    function setCanvasSize(w, h){
+      canvas.setWidth(w);
+      canvas.setHeight(h);
+      canvas.calcOffset();
+      canvas.renderAll();
+    }
+
+    // Формат (ширхвыс)
+    document.getElementById('formatSelect').addEventListener('change', (e)=>{
+      const val = e.target.value.trim();
+      const [w,h] = val.split('x').map(x=>parseInt(x));
+      if(w && h){ setCanvasSize(w,h); }
+    });
+
+    // ---------- Загрузка фото ----------
+    document.getElementById('fileInput').addEventListener('change', function(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        fabric.Image.fromURL(ev.target.result, function(img){
+          const scale = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
+          img.set({ left: 20, top: 20, scaleX: scale, scaleY: scale, selectable: true });
+          canvas.add(img).setActiveObject(img);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ---------- Загрузка логотипа ----------
+    document.getElementById('logoInput').addEventListener('change', function(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev){
+        fabric.Image.fromURL(ev.target.result, function(img){
+          img.set({ left: canvas.width - 150, top: canvas.height - 150, scaleX: 0.3, scaleY: 0.3, selectable: true });
+          canvas.add(img).setActiveObject(img);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ---------- Добавление текста ----------
+    document.getElementById('addTextBtn').addEventListener('click', ()=>{
+      const font = document.getElementById('fontSelect').value || 'Arial';
+      const t = new fabric.IText('Новый текст', {
+        left: 40, top: 40, fontFamily: font, fontSize: 32, fill: '#ffffff', stroke: '#000000', strokeWidth: 0.6, editable: true
+      });
+      canvas.add(t).setActiveObject(t);
+      t.enterEditing();
+    });
+
+    document.getElementById('fontSelect').addEventListener('change', (e)=>{
+      const obj = canvas.getActiveObject();
+      if(obj && obj.type === 'i-text') obj.set('fontFamily', e.target.value);
+      canvas.requestRenderAll();
+    });
+
+    // ---------- Фоны / градиенты ----------
+    document.getElementById('bgPreset').addEventListener('change', function(){
+      const v = this.value;
+      if(v === 'none'){ canvas.setBackgroundImage(null); canvas.setBackgroundColor('#ffffff'); canvas.renderAll(); return; }
+      if(v === 'grad1' || v === 'grad2'){
+        // Генерируем временный canvas с градиентом и ставим как backgroundImage
+        const tmp = document.createElement('canvas');
+        tmp.width = canvas.width; tmp.height = canvas.height;
+        const ctx = tmp.getContext('2d');
+        const g = ctx.createLinearGradient(0,0,tmp.width,tmp.height);
+        if(v === 'grad1'){ g.addColorStop(0,'#ff9a9e'); g.addColorStop(1,'#fad0c4'); }
+        if(v === 'grad2'){ g.addColorStop(0,'#a1c4fd'); g.addColorStop(1,'#c2e9fb'); }
+        ctx.fillStyle = g; ctx.fillRect(0,0,tmp.width,tmp.height);
+        const dataURL = tmp.toDataURL('image/png');
+        fabric.Image.fromURL(dataURL, function(img){ canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas)); });
+      } else if(v==='pattern1'){
+        // пример шаблона из assets (если загрузишь assets/pattern1.png)
+        const url = 'assets/templates/pattern1.png';
+        fabric.Image.fromURL(url, function(img){ canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas)); });
+      }
+    });
+
+    // ---------- Слойность ----------
+    document.getElementById('bringForward').addEventListener('click', ()=> {
+      const o = canvas.getActiveObject(); if(!o) return;
+      canvas.bringForward(o); canvas.requestRenderAll();
+    });
+    document.getElementById('sendBack').addEventListener('click', ()=> {
+      const o = canvas.getActiveObject(); if(!o) return;
+      canvas.sendBackwards(o); canvas.requestRenderAll();
+    });
+
+    // ---------- Удаление ----------
+    document.getElementById('deleteBtn').addEventListener('click', ()=>{
+      const o = canvas.getActiveObject(); if(!o) return;
+      canvas.remove(o);
+    });
+
+    // ---------- Скачивание / экспорт ----------
+    document.getElementById('downloadBtn').addEventListener('click', ()=>{
+      // Снимаем выделение и рендер
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      // multiplier позволяет получить итоговое изображение высокого разрешения
+      const dataURL = canvas.toDataURL({ format: 'png', multiplier: 2 });
+      const link = document.createElement('a');
+      link.href = dataURL;
+      link.download = 'smm_design.png';
+      link.click();
+    });
+
+    // ---------- Мобильные улучшения ----------
+    // Отключаем выделение текста страницы при долгом таче
+    document.body.addEventListener('touchmove', function(e){ /* noop to ensure touch works smoothly */ }, { passive:true });
+
+    // ---------- Конец ----------
+  </script>
+</body>
+</html>
