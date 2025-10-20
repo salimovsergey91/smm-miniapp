@@ -1,0 +1,71 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden; /* фиксированный экран, без прокрутки */
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  background: #fdfdfd;
+}
+
+.toolbar, .bottom-bar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #fff;
+  padding: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.toolbar button, .toolbar select, .bottom-bar button {
+  border: none;
+  background: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.toolbar button:hover, .toolbar select:hover, .bottom-bar button:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+#editor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 120px);
+}
+
+canvas {
+  width: 90%;
+  max-width: 400px;
+  height: auto;
+  background: #f0f0f0;
+  margin: 10px 0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.sliders {
+  display: flex;
+  justify-content: space-around;
+  width: 90%;
+  max-width: 400px;
+  margin: 10px 0;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(255,126,95,0.3);
+}

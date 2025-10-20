@@ -1,10 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>SMM Mini App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMM MiniApp</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <h1>Привет! Мини-апп работает 🚀</h1>
+<body class="start-screen">
+  <div class="container">
+    <h1>Это твой помощник в <span class="brand">SMM</span></h1>
+    <p>Создавай стильные посты и сторис прямо в Telegram 💫</p>
+    <button id="startBtn" class="btn-primary">Начать</button>
+    <input type="file" id="photoInput" accept="image/*" hidden>
+  </div>
+
+  <script>
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('photoInput').click();
+    });
+
+    document.getElementById('photoInput').addEventListener('change', () => {
+      window.location.href = 'editor.html';
+    });
+  </script>
 </body>
 </html>
