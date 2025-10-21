@@ -1,50 +1,25 @@
 const canvas = document.getElementById('editorCanvas');
 const ctx = canvas.getContext('2d');
-const fileInput = document.getElementById('photoInput');
-const brightnessRange = document.getElementById('brightnessRange');
-const contrastRange = document.getElementById('contrastRange');
-
 canvas.width = 360;
 canvas.height = 360;
 
 let img = new Image();
-let brightness = 1;
-let contrast = 1;
+let file = localStorage.getItem('photo');
 
-// Загрузка фото
-fileInput.addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    img.src = event.target.result;
-    img.onload = drawImage;
-  };
-  reader.readAsDataURL(file);
-});
-
-function drawImage() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.filter = `brightness(${brightness}) contrast(${contrast})`;
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  ctx.filter = 'none';
+if (file) {
+  img.src = file;
+  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 }
 
-// Яркость и контраст через ползунки
-brightnessRange.addEventListener('input', (e) => {
-  brightness = e.target.value;
-  drawImage();
-});
+// Фильтры
+document.getElementById('brightnessBtn').onclick = () => {
+  ctx.filter = 'brightness(1.2)';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+};
 
-contrastRange.addEventListener('input', (e) => {
-  contrast = e.target.value;
-  drawImage();
-});
-
-// Кнопки фильтров
 document.getElementById('filterBtn').onclick = () => {
-  ctx.filter = 'contrast(1.2) saturate(1.3)';
-  drawImage();
+  ctx.filter = 'contrast(1.3) saturate(1.2)';
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 };
 
 document.getElementById('vignetteBtn').onclick = () => {
@@ -53,35 +28,44 @@ document.getElementById('vignetteBtn').onclick = () => {
     canvas.width / 2, canvas.height / 2, 250
   );
   gradient.addColorStop(0, 'transparent');
-  gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0.5)');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawImage();
 };
 
+// Градиентный фон
 document.getElementById('gradientBtn').onclick = () => {
-  const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  grad.addColorStop(0, 'pink');
-  grad.addColorStop(1, 'orange');
-  ctx.fillStyle = grad;
+  const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+  gradient.addColorStop(0, '#ff9a9e');
+  gradient.addColorStop(1, '#fad0c4');
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  drawImage();
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 };
 
-document.getElementById('fontBtn').onclick = () => {
-  ctx.font = '30px Arial';
-  ctx.fillStyle = 'white';
-  ctx.fillText('Пример текста', 20, 50);
+// Цветной фон
+document.getElementById('bgBtn').onclick = () => {
+  const colors = ['#f9f9f9', '#ffe4e1', '#e0f7fa', '#fff3e0', '#f3e5f5'];
+  const randomColor = colors[Math.floor(Math.random() * colors.length)];
+  ctx.fillStyle = randomColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 };
 
-// Предпросмотр
-document.getElementById('previewBtn').onclick = () => {
-  const dataUrl = canvas.toDataURL();
-  const win = window.open();
-  win.document.write(`<img src="${dataUrl}" style="width:100%">`);
+// Добавление текста
+document.getElementById('addTextBtn').onclick = () => {
+  const text = document.getElementById('captionInput').value;
+  const selectedFont = document.getElementById('fontSelect').value;
+
+  if (text) {
+    ctx.font = `24px ${selectedFont}`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, canvas.width / 2, canvas.height - 30);
+  }
 };
 
-// Сохранение
+// Сохранить
 document.getElementById('saveBtn').onclick = () => {
   const link = document.createElement('a');
   link.download = 'smm-image.png';
@@ -89,7 +73,7 @@ document.getElementById('saveBtn').onclick = () => {
   link.click();
 };
 
-// Заглушка Telegram
-document.getElementById('openTG').onclick = () => {
-  alert('Открытие в Telegram MiniApp...');
+// Предпросмотр
+document.getElementById('previewBtn').onclick = () => {
+  window.open(canvas.toDataURL('image/png'), '_blank');
 };
